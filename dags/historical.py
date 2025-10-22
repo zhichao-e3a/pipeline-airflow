@@ -20,7 +20,8 @@ default_args = {
     dag_id="historical",
     description="Query, filter and model measurements for historical patients.",
     default_args=default_args,
-    start_date=datetime(2025, 10, 1),
+    start_date=datetime(2025, 10, 23),
+    schedule="30 8 * * 1",
     catchup=False
 )
 def historical():

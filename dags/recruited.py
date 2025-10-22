@@ -20,7 +20,8 @@ default_args = {
     dag_id="recruited",
     description="Query, filter and model measurements for recruited patients.",
     default_args=default_args,
-    start_date=datetime(2025, 10, 1),
+    start_date=datetime(2025, 10, 23),
+    schedule="30 8 * * *",
     catchup=False
 )
 def recruited():
