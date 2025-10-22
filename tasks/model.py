@@ -72,6 +72,10 @@ async def model(
         }
     )
 
+    print(f"{len(all_patients)} PATIENTS FETCHED FROM 'patients_unified'")
+
+    print(f"{len(measurements)} MEASUREMENTS FETCHED FROM 'filt_{origin}'")
+
     add, onset = await anyio.to_thread.run_sync(
         lambda: combine_data(
             measurements,
@@ -114,7 +118,11 @@ async def model(
         coll_name="model_data_onset"
     )
 
+    print(f"{len(extracted_onset)} RECORDS UPSERTED TO 'model_data_onset'")
+
     await mongo.upsert_documents_hashed(
         extracted_add,
         coll_name="model_data_add",
     )
+
+    print(f"{len(extracted_add)} RECORDS UPSERTED TO 'model_data_add'")

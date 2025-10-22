@@ -56,7 +56,7 @@ async def query(
             }
         )
 
-        print(f"FETCHED DATA FOR {len(recruited_mobile)} PATIENTS")
+        print(f"{len(recruited_mobile)} PATIENTS FETCHED FROM 'patients_unified'")
 
         # Get mobile numbers of recruited patients
         query_string = ",".join(
@@ -76,7 +76,7 @@ async def query(
             )
         )
 
-    print(f"QUERIED DATAFRAME WITH {len(df)} MEASUREMENTS")
+    print(f"{len(df)} MEASUREMENTS FETCHED FROM SQL")
 
     # UC, FHR, FMov measurements not ordered yet
     uc_results, fhr_results, fmov_results = await async_process_df(df)
@@ -145,6 +145,8 @@ async def query(
             await mongo.upsert_documents_hashed(record_list, coll_name = 'raw_hist')
         elif origin == 'rec':
             await mongo.upsert_documents_hashed(record_list, coll_name = 'raw_rec')
+
+        print(f"{len(record_list)} RECORDS UPSERTED TO 'raw_{origin}'")
 
         # Update watermark only if there were records fetched
         latest_utime = pd.to_datetime(df["utime"]) \

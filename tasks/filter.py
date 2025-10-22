@@ -122,6 +122,8 @@ async def filter(
             elif origin == 'rec':
                 await mongo.upsert_documents_hashed(filt_records, coll_name = 'filt_rec')
 
+            print(f"{len(filt_records)} RECORDS UPSERTED TO 'filt_{origin}'")
+
         watermark_log = {
             "pipeline_name": f'raw_{origin}',
             "last_utime": batch_max_utime

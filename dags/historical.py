@@ -2,7 +2,6 @@ from database.MongoDBConnector import MongoDBConnector
 from database.SQLDBConnector import SQLDBConnector
 from tasks.query import query
 from tasks.filter import filter
-from tasks.model import model
 
 import os
 import asyncio
@@ -18,13 +17,13 @@ default_args = {
 
 @dag(
     dag_id="historical",
-    description="Query, filter and model measurements for historical patients.",
+    description="Query, filter measurements for historical patients.",
     default_args=default_args,
-    start_date=datetime(2025, 10, 23),
-    schedule="30 8 * * 1",
+    start_date=datetime(2025, 10, 22),
+    schedule="0 9 * * 1",
     catchup=False
 )
-def historical():
+def historical_dag():
 
     mongo = MongoDBConnector(mode=os.getenv("MODE"))
     sql   = SQLDBConnector()
@@ -58,20 +57,6 @@ def historical():
 
         print("[2] END FILTERING DATA")
 
-    @task()
-    def task_model():
+    task_query() >> task_filter()
 
-        print("[3] START MODELING DATA")
-
-        asyncio.run(
-            model(
-                mongo = mongo,
-                origin = "hist"
-            )
-        )
-
-        print("[3] END MODELING DATA")
-
-    task_query() >> task_filter() >> task_model()
-
-dag = historical()
+dag = historical_dag()
