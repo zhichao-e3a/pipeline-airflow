@@ -152,10 +152,15 @@ async def query(
         latest_utime = pd.to_datetime(df["utime"]) \
             .max().strftime("%Y-%m-%d %H:%M:%S")
 
-        watermark_log = {
-            "pipeline_name": f'sql_{origin}',
-            "last_utime": latest_utime
-        }
+        if (
+                datetime.strptime(latest_utime, "%Y-%m-%d %H:%M:%S")-
+                datetime.strptime(last_utime, "%Y-%m-%d %H:%M:%S")
+        ).days > 7:
 
-        # Upsert watermark to MongoDB
-        await mongo.upsert_documents_hashed([watermark_log], "watermarks")
+            watermark_log = {
+                "pipeline_name": f'sql_{origin}',
+                "last_utime": latest_utime
+            }
+
+            # Upsert watermark to MongoDB
+            await mongo.upsert_documents_hashed([watermark_log], "watermarks")

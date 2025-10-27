@@ -4,7 +4,7 @@ from tasks.model import model
 import os
 import asyncio
 
-from airflow.decorators import dag, task
+from airflow.sdk import dag, task
 from datetime import datetime, timedelta
 
 default_args = {
@@ -19,7 +19,8 @@ default_args = {
     default_args=default_args,
     start_date=datetime(2025, 10, 22),
     schedule="0 9 * * 2,4",
-    catchup=False
+    catchup=False,
+    max_active_runs=2
 )
 def model_dag():
 
