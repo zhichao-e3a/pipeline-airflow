@@ -126,17 +126,12 @@ async def filter(
 
             print(f"{len(filt_records)} RECORDS UPSERTED TO 'filt_{origin}'")
 
-        if (
-            datetime.strptime(batch_max_utime, "%Y-%m-%d %H:%M:%S")-
-            datetime.strptime(last_utime, "%Y-%m-%d %H:%M:%S")
-        ).days > 7:
+        watermark_log = {
+            "pipeline_name": f'raw_{origin}',
+            "last_utime": batch_max_utime
+        }
 
-            watermark_log = {
-                "pipeline_name": f'raw_{origin}',
-                "last_utime": batch_max_utime
-            }
+        # Upsert watermark to MongoDB
+        await mongo.upsert_documents_hashed([watermark_log], "watermarks")
 
-            # Upsert watermark to MongoDB
-            await mongo.upsert_documents_hashed([watermark_log], "watermarks")
-
-            print(f"WATERMARK UPDATED: {batch_max_utime}")
+        print(f"WATERMARK UPDATED: {batch_max_utime}")

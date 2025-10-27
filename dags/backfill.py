@@ -41,7 +41,7 @@ def backfill_dag():
     trigger_rec_downstream = TriggerDagRunOperator(
         task_id="rec_downstream",
         trigger_dag_id="recruited",
-        poke_interval=60,
+        poke_interval=10,
         wait_for_completion=True,
         reset_dag_run=False,
         logical_date="{{ ts }}"
@@ -50,7 +50,7 @@ def backfill_dag():
     trigger_hist_downstream = TriggerDagRunOperator(
         task_id="hist_downstream",
         trigger_dag_id="historical",
-        poke_interval=60,
+        poke_interval=10,
         wait_for_completion=True,
         reset_dag_run=False,
         logical_date="{{ ts }}"

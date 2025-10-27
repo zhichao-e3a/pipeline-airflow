@@ -16,25 +16,26 @@ async def query(
 
 ) -> None:
 
-    curr_watermark = await mongo.get_all_documents(
-        coll_name = "watermarks",
-        query = {
-            "_id" : {
-                "$eq" : f"sql_{origin}"
-            }
-        },
-        projection = {
-            "_id"        : 0,
-            "last_utime" : 1
-        }
-    )
-
-    last_utime = curr_watermark[0]['last_utime']
-
-    print("WATERMARK RETRIEVED", last_utime)
-
     # Historical patients
     if origin == "hist":
+
+        curr_watermark = await mongo.get_all_documents(
+            coll_name="watermarks",
+            query={
+                "_id": {
+                    "$eq": f"sql_hist"
+                }
+            },
+            projection={
+                "_id": 0,
+                "last_utime": 1
+            }
+        )
+
+        last_utime = curr_watermark[0]['last_utime']
+
+        print("WATERMARK RETRIEVED:", last_utime)
+
         df = await anyio.to_thread.run_sync(
             lambda: sql.query_to_dataframe(
                 query = HISTORICAL.format(
@@ -42,39 +43,71 @@ async def query(
                )
             )
         )
+
     # Recruited patients
     elif origin == "rec":
-        # Query existing Recruited patients from MongoDB
-        recruited_mobile = await mongo.get_all_documents(
+
+        # Query mobile numbers of recruited patients in 'patients_unified' (have given birth)
+        recruited_patients = await mongo.get_all_documents(
             coll_name = "patients_unified",
             query = {
-                'type' : 'rec'
+                'type' : 'rec',
+                'delivery_type' : {
+                    '$ne' : None
+                }
             },
             projection = {
                 '_id'       : 0,
                 'mobile'    : 1,
+                'edd'       : 1,
+                'add'       : 1
             }
         )
 
-        print(f"{len(recruited_mobile)} PATIENTS FETCHED FROM 'patients_unified'")
-
-        # Get mobile numbers of recruited patients
-        query_string = ",".join(
-            [
-                f"'{i["mobile"]}'" for i in recruited_mobile
-            ]
+        # Query mobile numbers of recruited patients in 'raw_rec' (have given birth)
+        recruited_measurements = await mongo.get_all_documents(
+            coll_name = "raw_rec",
+            projection = {
+                '_id'       : 0,
+                'mobile'    : 1
+            }
         )
 
-        df = await anyio.to_thread.run_sync(
-            lambda: sql.query_to_dataframe(
-                query = RECRUITED.format(
-                    start = "'2025-03-01 00:00:00'",
-                    end = f"'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'",
-                    numbers = query_string,
-                    last_utime = last_utime
+        # Mobile numbers of recruited patients in 'raw_rec' (have given birth)
+        measurements_mobile = set([i['mobile'] for i in recruited_measurements])
+
+        # Find mobile numbers in 'patients_unified' but not in 'raw_rec'
+        new_additions = {} ; query_string_list = []
+        for i in recruited_patients:
+
+            mobile = i['mobile']
+
+            if mobile not in measurements_mobile:
+
+                new_additions[mobile] = i
+
+                query_string_list.append(f"'{mobile}'")
+
+        print(f"{len(recruited_patients)} PATIENTS FETCHED FROM 'patients_unified'")
+        print(f"{len(recruited_measurements)} PATIENTS FETCHED FROM 'raw_rec'")
+        print(f"{len(new_additions)} NEW PATIENTS")
+
+        if len(new_additions) > 0:
+            # Get mobile numbers of 'new' recruited patients
+            query_string = ",".join(query_string_list)
+
+            df = await anyio.to_thread.run_sync(
+                lambda: sql.query_to_dataframe(
+                    query = RECRUITED.format(
+                        start = "'2025-03-01 00:00:00'",
+                        end = f"'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'",
+                        numbers = query_string
+                    )
                 )
             )
-        )
+        else:
+            print("NO NEW ADDITIONS")
+            return
 
     print(f"{len(df)} MEASUREMENTS FETCHED FROM SQL")
 
@@ -113,14 +146,14 @@ async def query(
 
         # Build record (gest_age can be NULL, UC/FHR can be < 20 minutes)
         record = {
-            '_id': row_id,
-            'mobile': mobile,
-            'measurement_date': m_date,
-            'start_test_ts': start_test_ts,
-            'uc': uc_data,
-            'fhr': fhr_data,
-            'fmov': raw_fmov_data,
-            'gest_age': gest_age
+            '_id'               : row_id,
+            'mobile'            : mobile,
+            'measurement_date'  : m_date,
+            'start_test_ts'     : start_test_ts,
+            'uc'                : uc_data,
+            'fhr'               : fhr_data,
+            'fmov'              : raw_fmov_data,
+            'gest_age'          : gest_age
         }
 
         # Handle EDD, ADD for historical patients
@@ -131,8 +164,14 @@ async def query(
             add = datetime.fromtimestamp(int(row['end_born_ts'])) \
                 .strftime("%Y-%m-%d %H:%M:%S")
 
-            record['edd'] = edd
-            record['add'] = add
+        # Handle EDD, ADD for recruited patients
+        elif origin == 'rec':
+
+            edd = new_additions[mobile]['edd']
+
+            add = new_additions[mobile]['add']
+
+        record['edd'] = edd ; record['add'] = add
 
         record_list.append(record)
 
@@ -142,23 +181,15 @@ async def query(
 
         # Upsert records to MongoDB
         if origin == 'hist':
+
             await mongo.upsert_documents_hashed(record_list, coll_name = 'raw_hist')
-        elif origin == 'rec':
-            await mongo.upsert_documents_hashed(record_list, coll_name = 'raw_rec')
 
-        print(f"{len(record_list)} RECORDS UPSERTED TO 'raw_{origin}'")
-
-        # Update watermark only if there were records fetched
-        latest_utime = pd.to_datetime(df["utime"]) \
-            .max().strftime("%Y-%m-%d %H:%M:%S")
-
-        if (
-            datetime.strptime(latest_utime, "%Y-%m-%d %H:%M:%S")-
-            datetime.strptime(last_utime, "%Y-%m-%d %H:%M:%S")
-        ).days > 7:
+            # Historical: Update watermark only if there were records fetched
+            latest_utime = pd.to_datetime(df["utime"]) \
+                .max().strftime("%Y-%m-%d %H:%M:%S")
 
             watermark_log = {
-                "pipeline_name": f'sql_{origin}',
+                "pipeline_name": f'sql_hist',
                 "last_utime": latest_utime
             }
 
@@ -166,3 +197,9 @@ async def query(
             await mongo.upsert_documents_hashed([watermark_log], "watermarks")
 
             print(f"WATERMARK UPDATED: {latest_utime}")
+
+        elif origin == 'rec':
+
+            await mongo.upsert_documents_hashed(record_list, coll_name = 'raw_rec')
+
+        print(f"{len(record_list)} RECORDS UPSERTED TO 'raw_{origin}'")

@@ -55,8 +55,8 @@ def combine_data(measurements, patients):
             record["add"] = row["add"]
             combined_data_add.append(record)
 
-        # unified (nullable/empty)
-        if row["onset"] is not None and row["onset"]:
+        # unified (nullable)
+        if row["onset"] is not None:
             record["onset"] = row["onset"]
             combined_data_onset.append(record)
 

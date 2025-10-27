@@ -38,8 +38,7 @@ r.contraction_url,
 r.hb_baby_url,
 r.raw_fetal_url,
 r.basic_info,
-r.conclusion,
-r.utime
+r.conclusion
 FROM
 extant_future_user.user AS uu
 INNER JOIN
@@ -49,6 +48,5 @@ AND r.contraction_url <> ''
 AND r.hb_baby_url <> ''
 AND uu.mobile IN ({numbers})
 AND r.start_ts BETWEEN UNIX_TIMESTAMP({start}) AND UNIX_TIMESTAMP({end})
-AND r.utime > '{last_utime}'
 ;
 """
