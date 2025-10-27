@@ -153,8 +153,8 @@ async def query(
             .max().strftime("%Y-%m-%d %H:%M:%S")
 
         if (
-                datetime.strptime(latest_utime, "%Y-%m-%d %H:%M:%S")-
-                datetime.strptime(last_utime, "%Y-%m-%d %H:%M:%S")
+            datetime.strptime(latest_utime, "%Y-%m-%d %H:%M:%S")-
+            datetime.strptime(last_utime, "%Y-%m-%d %H:%M:%S")
         ).days > 7:
 
             watermark_log = {

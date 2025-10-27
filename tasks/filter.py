@@ -4,6 +4,8 @@ from utils.filter import extract_fetal_movement
 
 import anyio
 
+from datetime import datetime
+
 async def filter(
 
         mongo   : MongoDBConnector,
@@ -124,11 +126,16 @@ async def filter(
 
             print(f"{len(filt_records)} RECORDS UPSERTED TO 'filt_{origin}'")
 
-        watermark_log = {
-            "pipeline_name": f'raw_{origin}',
-            "last_utime": batch_max_utime
-        }
+        if (
+            datetime.strptime(batch_max_utime, "%Y-%m-%d %H:%M:%S")-
+            datetime.strptime(last_utime, "%Y-%m-%d %H:%M:%S")
+        ).days > 7:
 
-        # Upsert watermark to MongoDB
-        await mongo.upsert_documents_hashed([watermark_log], "watermarks")
+            watermark_log = {
+                "pipeline_name": f'raw_{origin}',
+                "last_utime": batch_max_utime
+            }
+
+            # Upsert watermark to MongoDB
+            await mongo.upsert_documents_hashed([watermark_log], "watermarks")
 
