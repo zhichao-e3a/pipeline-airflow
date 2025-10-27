@@ -326,7 +326,7 @@ class MongoDBConnector:
 
             self,
             coll_name: str,
-            query: str
+            query: Optional[Dict[str, Any]] = {}
 
     ):
 
@@ -339,4 +339,23 @@ class MongoDBConnector:
             except AutoReconnect:
                 await asyncio.sleep(0.5)
                 res = await coll.delete_one(query)
+                return res.deleted_count
+
+    async def delete_all_documents(
+
+            self,
+            coll_name: str,
+            query: Optional[Dict[str, Any]] = {}
+
+    ) -> None:
+
+        async with self.resource(coll_name) as coll:
+
+            try:
+                res = await coll.delete_many(query)
+                return res.deleted_count
+
+            except AutoReconnect:
+                await asyncio.sleep(0.5)
+                res = await coll.delete_many(query)
                 return res.deleted_count
