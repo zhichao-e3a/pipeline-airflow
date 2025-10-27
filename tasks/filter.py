@@ -139,3 +139,4 @@ async def filter(
             # Upsert watermark to MongoDB
             await mongo.upsert_documents_hashed([watermark_log], "watermarks")
 
+            print(f"WATERMARK UPDATED: {batch_max_utime}")
