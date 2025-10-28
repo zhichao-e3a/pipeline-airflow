@@ -1,5 +1,6 @@
 from database.MongoDBConnector import MongoDBConnector
 from tasks.model import model
+from utils.notifier import on_task_success, on_task_failure
 
 import os
 import asyncio
@@ -11,6 +12,8 @@ default_args = {
     "owner": "airflow",
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
+    "on_failure_callback": on_task_failure,
+    "on_success_callback": on_task_success
 }
 
 @dag(
@@ -24,10 +27,10 @@ default_args = {
 )
 def model_dag():
 
-    mongo = MongoDBConnector(mode=os.getenv("MODE"))
-
     @task()
     def task_model_rec():
+
+        mongo = MongoDBConnector(mode=os.getenv("MODE"))
 
         print("[1] START MODELING DATA FOR REC")
 
@@ -42,6 +45,8 @@ def model_dag():
 
     @task()
     def task_model_hist():
+
+        mongo = MongoDBConnector(mode=os.getenv("MODE"))
 
         print("[2] START MODELING DATA FOR HIST")
 

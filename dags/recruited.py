@@ -2,6 +2,7 @@ from database.MongoDBConnector import MongoDBConnector
 from database.SQLDBConnector import SQLDBConnector
 from tasks.query import query
 from tasks.filter import filter
+from utils.notifier import on_task_success, on_task_failure
 
 import os
 import asyncio
@@ -13,6 +14,8 @@ default_args = {
     "owner": "airflow",
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
+    "on_failure_callback": on_task_failure,
+    "on_success_callback": on_task_success
 }
 
 @dag(
@@ -26,11 +29,11 @@ default_args = {
 )
 def recruited_dag():
 
-    mongo = MongoDBConnector(mode=os.getenv("MODE"))
-    sql   = SQLDBConnector()
-
     @task()
     def task_query():
+
+        mongo   = MongoDBConnector(mode=os.getenv("MODE"))
+        sql     = SQLDBConnector()
 
         print("[1] START QUERYING DATA")
 
@@ -46,6 +49,8 @@ def recruited_dag():
 
     @task()
     def task_filter():
+
+        mongo = MongoDBConnector(mode=os.getenv("MODE"))
 
         print("[2] START FILTERING DATA")
 

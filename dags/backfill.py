@@ -1,5 +1,6 @@
 from database.MongoDBConnector import MongoDBConnector
 from tasks.backfill import backfill
+from utils.notifier import on_task_failure, on_task_success
 
 import os
 import asyncio
@@ -12,6 +13,8 @@ default_args = {
     "owner": "airflow",
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
+    "on_failure_callback": on_task_failure,
+    "on_success_callback": on_task_success
 }
 
 @dag(
@@ -23,10 +26,10 @@ default_args = {
 )
 def backfill_dag():
 
-    mongo = MongoDBConnector(mode=os.getenv("MODE"))
-
     @task()
     def task_backfill():
+
+        mongo = MongoDBConnector(mode=os.getenv("MODE"))
 
         print("[1] START CLEARING DATA")
 
