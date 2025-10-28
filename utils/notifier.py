@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 from datetime import timedelta
 
 RECIPIENTS = [
-    "zhichao.lin@e3ahealth.com"
+    "zhichao.lin@e3ahealth.com",
     "norine.chen@e3ahealth.com",
     "joey.hu@e3ahealth.com"
 ]
