@@ -7,8 +7,8 @@ from datetime import timedelta
 
 RECIPIENTS = [
     "zhichao.lin@e3ahealth.com"
-    # "norine.chen@e3ahealth.com",
-    # "joey.hu@e3ahealth.com",
+    "norine.chen@e3ahealth.com",
+    "joey.hu@e3ahealth.com"
 ]
 
 _LABEL_WIDTH = max(len(k) + 2 for k in ["DAG", "Task", "Run ID", "Start", "End", "Duration", "Try", "Task Log"])
@@ -50,7 +50,6 @@ def _common_context(context: Dict[str, Any]) -> Dict[str, Any]:
     dag_run     = context.get("dag_run")
     dag         = context.get("dag")
 
-    log_url     = getattr(ti, "log_url", None)
     start       = getattr(ti, "start_date", None)
     end         = getattr(ti, "end_date", None)
     try_num     = getattr(ti, "try_number", None)
@@ -67,7 +66,6 @@ def _common_context(context: Dict[str, Any]) -> Dict[str, Any]:
         "duration"          : duration,
         "try_number"        : try_num,
         "max_tries"         : max_tries,
-        "log_url"           : log_url
     }
 
 def on_task_failure(context: Dict[str, Any]) -> None:
@@ -93,7 +91,6 @@ def on_task_failure(context: Dict[str, Any]) -> None:
             f"End: {c['end']}",
             f"Duration: {_fmt_td(c['duration'])}",
             f"Try: {c['try_number']} / {c['max_tries']}",
-            f"Task Log: {c['log_url']}",
         ]
     )
 
@@ -134,7 +131,6 @@ def on_task_success(
             f"End: {c['end']}",
             f"Duration: {_fmt_td(c['duration'])}",
             f"Try: {c['try_number']} / {c['max_tries']}",
-            f"Task Log: {c['log_url']}",
         ]
     )
 
