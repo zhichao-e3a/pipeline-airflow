@@ -89,7 +89,7 @@ async def query(
                 query_string_list.append(f"'{mobile}'")
 
         print(f"{len(recruited_patients)} PATIENTS FETCHED FROM 'patients_unified'")
-        print(f"{len(recruited_measurements)} PATIENTS FETCHED FROM 'raw_rec'")
+        print(f"{len(measurements_mobile)} PATIENTS FETCHED FROM 'raw_rec'")
         print(f"{len(new_additions)} NEW PATIENTS")
 
         if len(new_additions) > 0:
@@ -106,7 +106,6 @@ async def query(
                 )
             )
         else:
-            print("NO NEW ADDITIONS")
             return
 
     print(f"{len(df)} MEASUREMENTS FETCHED FROM SQL")
