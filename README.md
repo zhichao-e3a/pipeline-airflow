@@ -6,16 +6,6 @@ Containerized environment is orchestrated via Docker Compose to spin up a comple
 
 ---
 
-### ☁️ Deployment Overview
-
-The entire Airflow cluster runs on a GCE virtual machine instance, provisioned with Docker Engine and Docker Compose.
-
-Airflow can be accessed via the public endpoint:
-
-http://35.240.213.6:8080/
-
----
-
 ### 🧠 Development Notes
 
 * For local testing, change the `MODE` environment variable in `docker-compose.yaml` (accepts 'local' or 'remote')
@@ -67,6 +57,73 @@ docker compose up -d
 
 ---
 
+### ☁️ Deployment Overview
+
+#### Details
+
+The entire Airflow cluster runs on a GCE virtual machine instance, provisioned with Docker Engine and Docker Compose.
+
+Airflow can be accessed via the public endpoint:
+
+http://35.240.213.6:8080/
+
+#### Access to Instance
+
+1. SSH into instance
+
+    ```bash
+    gcloud compute ssh pipeline-airflow \
+      --zone=asia-southeast1-b \
+      --project=tidy-computing-462809-e1
+    ```
+
+2. Pull from remote
+
+    ```bash
+    cd ~/apps/pipeline-airflow
+    
+    git pull origin main
+    ```
+
+3. Copy environment variable and keys to instance (run locally)
+
+    ```bash
+    # Can be checked by running `whoami` inside instance 
+    GCE_USER={user}
+   
+    SSH_PRIVATE_PATH={path/to/ssh/private_key}
+    
+    PROJECT_ROOT_PATH={path/to/project_root}
+   
+    scp -i $SSH_PRIVATE_PATH $PROJECT_ROOT_PATH/.env <user>@35.240.213.6:~/apps/pipeline-airflow/
+    
+    scp -i $SSH_PRIVATE_PATH $PROJECT_ROOT_PATH/config/.env <user>@35.240.213.6:~/apps/pipeline-airflow/
+    
+    scp -i $SSH_PRIVATE_PATH $PROJECT_ROOT_PATH/config/ef_aliyun_pem <user>@35.240.213.6:~/apps/pipeline-airflow/
+    ```
+
+4. Append `AIRFLOW_UID` to `.env` file (run from project root)
+    
+    ```bash
+    echo "AIRFLOW_UID=$(id -u)" >> .env
+    ```
+
+5. Create tmux session and attach to it
+    
+    ```bash
+    tmux new -s {session-name}
+    
+    tmux attach -t {session-name}
+    ```
+
+6. Start containers inside session (Ctrl+B followed by D to detach from session)
+
+    ```bash
+    docker compose up -d
+    ```
+
+---
+
 ### 🧩 DAG Overview
 
 `dags/recruited.py`, `dags/historical.py`
@@ -86,6 +143,16 @@ Formats validated measurement data and perform feature extraction to be subseque
 
 1. Recruited – Extract recruited patient data and validated measurements from MySQL, MongoDB, followed by feature extraction
 2. Historical – Extract historical patient data and validated measurements from MySQL, MongoDB, followed by feature extraction
+
+`dags/backfill.py`
+
+Refreshes and repopulates MongoDB collections.
+
+**Task sequence:**
+
+1. Reset - Removes all rows from MongoDB collections, resets database watermarks
+2. Recruited – Extract recruited patient data and validated measurements from MySQL, MongoDB, followed by feature extraction
+3. Historical – Extract historical patient data and validated measurements from MySQL, MongoDB, followed by feature extraction
 
 ---
 
