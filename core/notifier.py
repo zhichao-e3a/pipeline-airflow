@@ -18,15 +18,13 @@ class DagNotifier:
 
     ):
 
-        msg = EmailMessage()
-
-        msg['Subject'] = subject ; msg['From'] = self.username
-
-        msg.set_content(content)
-
         for r in to_address:
 
-            msg['To'] = r
+            msg = EmailMessage()
+
+            msg['Subject'] = subject ; msg['From'] = self.username ; msg['To'] = r
+
+            msg.set_content(content)
 
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
                 smtp.login(
