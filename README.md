@@ -87,19 +87,18 @@ http://35.240.213.6:8080/
 
 3. Copy environment variable and keys to instance (run locally)
 
-    ```bash
-    # Can be checked by running `whoami` inside instance 
-    GCE_USER={user}
+    ```bash 
+    GCE_USER={user} # Can be checked by running `whoami` inside instance
    
     SSH_PRIVATE_PATH={path/to/ssh/private_key}
     
     PROJECT_ROOT_PATH={path/to/project_root}
    
-    scp -i $SSH_PRIVATE_PATH $PROJECT_ROOT_PATH/.env <user>@35.240.213.6:~/apps/pipeline-airflow/
+    scp -i $SSH_PRIVATE_PATH $PROJECT_ROOT_PATH/.env $GCE_USER@35.240.213.6:~/apps/pipeline-airflow/
     
-    scp -i $SSH_PRIVATE_PATH $PROJECT_ROOT_PATH/config/.env <user>@35.240.213.6:~/apps/pipeline-airflow/
+    scp -i $SSH_PRIVATE_PATH $PROJECT_ROOT_PATH/config/.env $GCE_USER@35.240.213.6:~/apps/pipeline-airflow/config
     
-    scp -i $SSH_PRIVATE_PATH $PROJECT_ROOT_PATH/config/ef_aliyun_pem <user>@35.240.213.6:~/apps/pipeline-airflow/
+    scp -i $SSH_PRIVATE_PATH $PROJECT_ROOT_PATH/config/ef_aliyun_pem $GCE_USER@35.240.213.6:~/apps/pipeline-airflow/config
     ```
 
 4. Append `AIRFLOW_UID` to `.env` file (run from project root)
@@ -184,7 +183,6 @@ pipeline-airflow/
 ├── core/                       # Shared logic and states across tasks
 │
 ├── dags/                       # DAG definitions
-│   └── recruited.py            # Main DAG orchestrating the recruited data pipeline
 │
 ├── database/                   # Database connectors & queries
 │   ├── MongoDBConnector.py     # MongoDB connector class
