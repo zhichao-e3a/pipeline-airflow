@@ -52,7 +52,7 @@ async def model(
             "gdm"           : 1,
             "pih"           : 1,
             "delivery_type" : 1,
-            "add"           : 1,
+            # "add"           : 1,
             "onset"         : 1,
             "type"          : 1
         }
@@ -68,7 +68,8 @@ async def model(
             "fmov"              : 1,
             "gest_age"          : 1,
             "measurement_date"  : 1,
-            "start_test_ts"     : 1
+            "start_test_ts"     : 1,
+            "add"               : 1
         }
     )
 

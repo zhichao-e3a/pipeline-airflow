@@ -158,10 +158,10 @@ async def query(
         # Handle EDD, ADD for historical patients
         if origin == 'hist':
 
-            edd = row['expected_born_date'].strftime("%Y-%m-%d %H:%M:%S")
+            edd = row['expected_born_date'].strftime("%Y-%m-%d %H:%M")
 
             add = datetime.fromtimestamp(int(row['end_born_ts'])) \
-                .strftime("%Y-%m-%d %H:%M:%S")
+                .strftime("%Y-%m-%d %H:%M")
 
         # Handle EDD, ADD for recruited patients
         elif origin == 'rec':
