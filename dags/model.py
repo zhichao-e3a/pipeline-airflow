@@ -21,7 +21,7 @@ default_args = {
     description="Model measurements for recruited and historical patients.",
     default_args=default_args,
     start_date=datetime(2025, 10, 22),
-    schedule="0 9 * * 2,4",
+    # schedule="0 9 * * 2,4",
     catchup=False,
     max_active_runs=2
 )

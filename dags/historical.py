@@ -23,7 +23,7 @@ default_args = {
     description="Query, filter measurements for historical patients.",
     default_args=default_args,
     start_date=datetime(2025, 10, 22),
-    schedule="0 9 * * 1",
+    # schedule="0 9 * * 1",
     catchup=False,
     max_active_runs=2
 )
