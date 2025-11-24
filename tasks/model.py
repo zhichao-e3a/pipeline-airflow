@@ -32,6 +32,8 @@ async def model(
 
 ) -> None:
 
+    print("RETRIEVING PATIENTS FROM `patients_unified`")
+
     all_patients = await mongo.get_all_documents(
         coll_name="patients_unified",
         query = {
@@ -58,6 +60,8 @@ async def model(
         }
     )
 
+    print(f"RETRIEVING MEASUREMENTS FROM `filt_{origin}`")
+
     measurements = await mongo.get_all_documents(
         coll_name=f"filt_{origin}",
         projection={
@@ -65,7 +69,7 @@ async def model(
             "mobile"            : 1,
             "uc"                : 1,
             "fhr"               : 1,
-            "fmov"              : 1,
+            # "fmov"              : 1,
             "gest_age"          : 1,
             "measurement_date"  : 1,
             "start_test_ts"     : 1,

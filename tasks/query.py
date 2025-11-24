@@ -7,6 +7,7 @@ from utils.query import async_process_df, extract_gest_age
 import anyio
 import pandas as pd
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 async def query(
 
@@ -18,6 +19,8 @@ async def query(
 
     # Historical patients
     if origin == "hist":
+
+        print("RETRIEVING WATERMARK")
 
         curr_watermark = await mongo.get_all_documents(
             coll_name="watermarks",
@@ -47,6 +50,8 @@ async def query(
     # Recruited patients
     elif origin == "rec":
 
+        print("RETRIEVING PATIENTS FROM `patients_unified`")
+
         # Query mobile numbers of recruited patients in 'patients_unified' (have given birth)
         recruited_patients = await mongo.get_all_documents(
             coll_name = "patients_unified",
@@ -63,6 +68,8 @@ async def query(
                 'add'       : 1
             }
         )
+
+        print("RETRIEVING MEASUREMENTS FROM `raw_rec`")
 
         # Query mobile numbers of recruited patients in 'raw_rec' (have given birth)
         recruited_measurements = await mongo.get_all_documents(
@@ -88,8 +95,8 @@ async def query(
 
                 query_string_list.append(f"'{mobile}'")
 
-        print(f"{len(recruited_patients)} PATIENTS FETCHED FROM 'patients_unified'")
-        print(f"{len(measurements_mobile)} PATIENTS FETCHED FROM 'raw_rec'")
+        print(f"{len(recruited_patients)} PATIENTS RETRIEVED FROM 'patients_unified'")
+        print(f"{len(measurements_mobile)} PATIENTS RETRIEVED FROM 'raw_rec'")
         print(f"{len(new_additions)} NEW PATIENTS")
 
         if len(new_additions) > 0:
@@ -108,7 +115,7 @@ async def query(
         else:
             return
 
-    print(f"{len(df)} MEASUREMENTS FETCHED FROM SQL")
+    print(f"{len(df)} MEASUREMENTS RETRIEVED FROM SQL")
 
     # UC, FHR, FMov measurements not ordered yet
     uc_results, fhr_results, fmov_results = await async_process_df(df)
@@ -118,7 +125,7 @@ async def query(
     # Order UC and FHR measurements
     sorted_uc_list      = sorted(uc_results, key=lambda x: x[0])
     sorted_fhr_list     = sorted(fhr_results, key=lambda x: x[0])
-    sorted_fmov_list    = sorted(fmov_results, key=lambda x: x[0])
+    # sorted_fmov_list    = sorted(fmov_results, key=lambda x: x[0])
 
     record_list = []
     for idx, row in df.iterrows():
@@ -126,18 +133,22 @@ async def query(
         row_id          = row['id']
         mobile          = row['mobile']
 
-        m_date          = datetime.fromtimestamp(int(row['start_ts']))\
-            .strftime("%Y-%m-%d %H:%M:%S")
+        m_date          = datetime.fromtimestamp(
+            int(row['start_ts']),
+            tz=ZoneInfo("Asia/Singapore")
+        ).strftime("%Y-%m-%d %H:%M:%S")
 
-        start_test_ts   = datetime.fromtimestamp(int(row['start_test_ts']))\
-            .strftime("%Y-%m-%d %H:%M:%S") if row['start_test_ts'] else None
+        start_test_ts   = datetime.fromtimestamp(
+            int(row['start_test_ts']),
+            tz=ZoneInfo("Asia/Singapore")
+        ).strftime("%Y-%m-%d %H:%M:%S") if row['start_test_ts'] else None
 
         # Extract UC, FHR data ; Do not filter by < 20 minutes yet
         uc_data     = sorted_uc_list[idx][1].split("\n")
         fhr_data    = sorted_fhr_list[idx][1].split("\n")
 
         # Extract raw FMov data
-        raw_fmov_data = sorted_fmov_list[idx][1].split("\n") if sorted_fmov_list[idx][1] else None
+        # raw_fmov_data = sorted_fmov_list[idx][1].split("\n") if sorted_fmov_list[idx][1] else None
 
         # Extract gestational age
         conclusion = row['conclusion'] ; basic_info = row['basic_info']
@@ -151,17 +162,19 @@ async def query(
             'start_test_ts'     : start_test_ts,
             'uc'                : uc_data,
             'fhr'               : fhr_data,
-            'fmov'              : raw_fmov_data,
+            # 'fmov'              : raw_fmov_data,
             'gest_age'          : gest_age
         }
 
         # Handle EDD, ADD for historical patients
         if origin == 'hist':
 
-            edd = row['expected_born_date'].strftime("%Y-%m-%d %H:%M")
+            edd = row['expected_born_date'].strftime("%Y-%m-%d")
 
-            add = datetime.fromtimestamp(int(row['end_born_ts'])) \
-                .strftime("%Y-%m-%d %H:%M")
+            add = datetime.fromtimestamp(
+                int(row['end_born_ts']),
+                tz=ZoneInfo("Asia/Singapore")
+            ).strftime("%Y-%m-%d %H:%M")
 
         # Handle EDD, ADD for recruited patients
         elif origin == 'rec':
@@ -188,7 +201,7 @@ async def query(
                 .max().strftime("%Y-%m-%d %H:%M:%S")
 
             watermark_log = {
-                "pipeline_name": f'sql_hist',
+                "pipeline_name": 'sql_hist',
                 "last_utime": latest_utime
             }
 

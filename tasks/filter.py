@@ -4,14 +4,14 @@ from utils.filter import extract_fetal_movement
 
 import anyio
 
-from datetime import datetime
-
 async def filter(
 
         mongo   : MongoDBConnector,
         origin  : str
 
 ) -> None:
+
+    print("RETRIEVING WATERMARK")
 
     curr_watermark = await mongo.get_all_documents(
         coll_name="watermarks",
@@ -66,7 +66,6 @@ async def filter(
             ]
         )
 
-    total_records   = 0
     bad_uc_fhr      = 0
     no_gest_age     = 0
     async for batch in raw_records:
@@ -90,19 +89,20 @@ async def filter(
                 while len(fhr_data) < max_len:
                     fhr_data.append("0")
 
-                fmov_data = await anyio.to_thread.run_sync(
-                    lambda: extract_fetal_movement(record['fmov'], record['measurement_date'], max_len)
-                ) if record['fmov'] else None
+                record['uc'] = uc_data
+                record['fhr'] = fhr_data
 
-                if fmov_data:
-                    if fmov_data[1] > max_len:
-                        while len(uc_data) != fmov_data[1] and len(fhr_data) != fmov_data[1]:
-                            uc_data.append("0")
-                            fhr_data.append("0")
-
-                record['uc']    = uc_data
-                record['fhr']   = fhr_data
-                record['fmov']  = fmov_data[0] if fmov_data else None
+                # fmov_data = await anyio.to_thread.run_sync(
+                #     lambda: extract_fetal_movement(record['fmov'], record['measurement_date'], max_len)
+                # ) if record['fmov'] else None
+                #
+                # if fmov_data:
+                #     if fmov_data[1] > max_len:
+                #         while len(uc_data) != fmov_data[1] and len(fhr_data) != fmov_data[1]:
+                #             uc_data.append("0")
+                #             fhr_data.append("0")
+                #
+                # record['fmov'] = fmov_data[0] if fmov_data else None
 
             # Check if gestational age is present
             gest_age = record['gest_age']
@@ -115,8 +115,6 @@ async def filter(
         print(f"{len(filt_records)} RECORDS BUILT")
 
         if len(filt_records) > 0:
-
-            total_records += len(filt_records)
 
             if origin == 'hist':
                 await mongo.upsert_documents_hashed(filt_records, coll_name = 'filt_hist')

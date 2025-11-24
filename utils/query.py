@@ -135,19 +135,26 @@ async def process_urls(urls_indexed):
 
 async def async_process_df(df):
 
-    uc, fhr, fmov = df["contraction_url"], df["hb_baby_url"], df["raw_fetal_url"]
+    # uc, fhr, fmov = df["contraction_url"], df["hb_baby_url"], df["raw_fetal_url"]
+    uc, fhr = df["contraction_url"], df["hb_baby_url"]
 
     uc_indexed      = [(i,j) for i,j in enumerate(uc)]
     fhr_indexed     = [(i,j) for i,j in enumerate(fhr)]
-    fmov_indexed    = [(i,j) for i,j in enumerate(fmov)]
+    # fmov_indexed    = [(i,j) for i,j in enumerate(fmov)]
 
-    uc_results, fhr_results, fmov_results = await asyncio.gather(
+    # uc_results, fhr_results, fmov_results = await asyncio.gather(
+    #     process_urls(uc_indexed),
+    #     process_urls(fhr_indexed),
+    #     process_urls(fmov_indexed)
+    # )
+
+    uc_results, fhr_results = await asyncio.gather(
         process_urls(uc_indexed),
         process_urls(fhr_indexed),
-        process_urls(fmov_indexed)
     )
 
-    return uc_results, fhr_results, fmov_results
+    # return uc_results, fhr_results, fmov_results
+    return uc_results, fhr_results, []
 
 async def async_process_urls(
         url_list
