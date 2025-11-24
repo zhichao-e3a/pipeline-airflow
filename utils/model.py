@@ -24,12 +24,14 @@ def combine_data(measurements, patients):
         # start_test_ts > start_ts always
         # start_ts indicates start time of finding FHR
         # start_test_ts indicates when FHR has been found
-        earliest_measurement = row["date_joined"]
+        # earliest_measurement = row["date_joined"]
 
-        if row["measurement_date"] < earliest_measurement:
-            continue
+        # if row["measurement_date"] < earliest_measurement:
+        #     print(f"SKIPPED {idx}: {row['measurement_date']} | {earliest_measurement}")
+        #     continue
 
         if row["delivery_type"] == "c-section":
+            print(f"SKIPPED {idx}: C-section")
             continue
 
         record = {
@@ -41,8 +43,8 @@ def combine_data(measurements, patients):
             "gest_age"          : row["gest_age"],          # filt
             "measurement_date"  : row["measurement_date"],  # filt
             "start_test_ts"     : row["start_test_ts"],     # filt
-            "age"               : row["age"],               # unified
-            "bmi"               : row["bmi"],               # unified
+            "age"               : row["age"] if pd.notna(row['age']) else None, # unified
+            "bmi"               : row["bmi"] if pd.notna(row['bmi']) else None, # unified
             "had_pregnancy"     : row["had_pregnancy"],     # unified
             "had_preterm"       : row["had_preterm"],       # unified
             "had_surgery"       : row["had_surgery"],       # unified
@@ -50,7 +52,7 @@ def combine_data(measurements, patients):
             "pih"               : row["pih"],               # unified
         }
 
-        # unified (nullable)
+        # filt
         if row["add"] is not None:
             record["add"] = row["add"]
             combined_data_add.append(record)
