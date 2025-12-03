@@ -13,14 +13,17 @@ async def query(
 
         sql     : SQLDBConnector,
         mongo   : MongoDBConnector,
-        origin  : str
+        origin  : str,
+        limit   : int = None
 
 ) -> None:
+
+    TASK = 1
 
     # Historical patients
     if origin == "hist":
 
-        print("RETRIEVING WATERMARK")
+        print(f"[{TASK:02d}] START RETRIEVING WATERMARK")
 
         curr_watermark = await mongo.get_all_documents(
             coll_name="watermarks",
@@ -37,20 +40,25 @@ async def query(
 
         last_utime = curr_watermark[0]['last_utime']
 
-        print("WATERMARK RETRIEVED:", last_utime)
+        print(f"[{TASK:02d}] END RETRIEVING WATERMARK ({last_utime})") ; TASK += 1
+
+        custom_query = HISTORICAL.format(last_utime=last_utime)
+
+        if limit is not None:
+            custom_query += f" LIMIT {limit}"
+
+        print(f"[{TASK:02d}] START QUERYING FROM NAVICAT")
 
         df = await anyio.to_thread.run_sync(
-            lambda: sql.query_to_dataframe(
-                query = HISTORICAL.format(
-                   last_utime = last_utime
-               )
-            )
+            lambda: sql.query_to_dataframe(query=custom_query)
         )
+
+        print(f"[{TASK:02d}] END QUERYING FROM NAVICAT ({len(df)} MEASUREMENTS)") ; TASK += 1
 
     # Recruited patients
     elif origin == "rec":
 
-        print("RETRIEVING PATIENTS FROM `patients_unified`")
+        print(f"[{TASK:02d}] START RETRIEVING PATIENTS")
 
         # Query mobile numbers of recruited patients in 'patients_unified' (have given birth)
         recruited_patients = await mongo.get_all_documents(
@@ -69,7 +77,9 @@ async def query(
             }
         )
 
-        print("RETRIEVING MEASUREMENTS FROM `raw_rec`")
+        print(f"[{TASK:02d}] END RETRIEVING PATIENTS ({len(recruited_patients)} PATIENTS)") ; TASK += 1
+
+        print(f"[{TASK:02d}] START RETRIEVING MEASUREMENTS")
 
         # Query mobile numbers of recruited patients in 'raw_rec' (have given birth)
         recruited_measurements = await mongo.get_all_documents(
@@ -79,6 +89,10 @@ async def query(
                 'mobile'    : 1
             }
         )
+
+        print(f"[{TASK:02d}] END RETRIEVING MEASUREMENTS ({len(recruited_measurements)} MEASUREMENTS)") ; TASK += 1
+
+        print(f"[{TASK:02d}] START IDENTIFYING NEW PATIENTS")
 
         # Mobile numbers of recruited patients in 'raw_rec' (have given birth)
         measurements_mobile = set([i['mobile'] for i in recruited_measurements])
@@ -95,37 +109,44 @@ async def query(
 
                 query_string_list.append(f"'{mobile}'")
 
-        print(f"{len(recruited_patients)} PATIENTS RETRIEVED FROM 'patients_unified'")
-        print(f"{len(measurements_mobile)} PATIENTS RETRIEVED FROM 'raw_rec'")
-        print(f"{len(new_additions)} NEW PATIENTS")
+        print(f"[{TASK:02d}] END IDENTIFYING NEW PATIENTS ({len(new_additions)} NEW PATIENTS)") ; TASK += 1
 
         if len(new_additions) > 0:
+
+            print(f"[{TASK:02d}] START QUERYING FROM NAVICAT")
+
             # Get mobile numbers of 'new' recruited patients
             query_string = ",".join(query_string_list)
+            custom_query = RECRUITED.format(
+                start="'2025-03-01 00:00:00'",
+                end=f"'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'",
+                numbers=query_string
+            )
+
+            if limit is not None:
+                custom_query += f" LIMIT {limit}"
 
             df = await anyio.to_thread.run_sync(
-                lambda: sql.query_to_dataframe(
-                    query = RECRUITED.format(
-                        start = "'2025-03-01 00:00:00'",
-                        end = f"'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'",
-                        numbers = query_string
-                    )
-                )
+                lambda: sql.query_to_dataframe(query = custom_query)
             )
-        else:
-            return
 
-    print(f"{len(df)} MEASUREMENTS RETRIEVED FROM SQL")
+            print(f"[{TASK:02d}] END QUERYING FROM NAVICAT ({len(df)} MEASUREMENTS)") ; TASK += 1
+
+        else: return
+
+    print(f"[{TASK:02d}] START DOWNLOADING UC, FHR, FMOV")
 
     # UC, FHR, FMov measurements not ordered yet
     uc_results, fhr_results, fmov_results = await async_process_df(df)
 
-    print(f"DOWNLOADED UC, FHR, FMOV")
+    print(f"[{TASK:02d}] END DOWNLOADING UC, FHR, FMOV") ; TASK += 1
+
+    print(f"[{TASK:02d}] START BUILDING RECORDS")
 
     # Order UC and FHR measurements
     sorted_uc_list      = sorted(uc_results, key=lambda x: x[0])
     sorted_fhr_list     = sorted(fhr_results, key=lambda x: x[0])
-    # sorted_fmov_list    = sorted(fmov_results, key=lambda x: x[0])
+    sorted_fmov_list    = sorted(fmov_results, key=lambda x: x[0])
 
     record_list = []
     for idx, row in df.iterrows():
@@ -148,7 +169,7 @@ async def query(
         fhr_data    = sorted_fhr_list[idx][1].split("\n")
 
         # Extract raw FMov data
-        # raw_fmov_data = sorted_fmov_list[idx][1].split("\n") if sorted_fmov_list[idx][1] else None
+        raw_fmov_data = sorted_fmov_list[idx][1].split("\n") if sorted_fmov_list[idx][1] else None
 
         # Extract gestational age
         conclusion = row['conclusion'] ; basic_info = row['basic_info']
@@ -162,7 +183,7 @@ async def query(
             'start_test_ts'     : start_test_ts,
             'uc'                : uc_data,
             'fhr'               : fhr_data,
-            # 'fmov'              : raw_fmov_data,
+            'fmov'              : raw_fmov_data,
             'gest_age'          : gest_age
         }
 
@@ -187,14 +208,20 @@ async def query(
 
         record_list.append(record)
 
-    print(f"{len(record_list)} RECORDS BUILT")
+    print(f"[{TASK:02d}] END BUILDING RECORDS ({len(record_list)} RECORDS)") ; TASK += 1
 
     if len(record_list) > 0:
 
         # Upsert records to MongoDB
         if origin == 'hist':
 
+            print(f"[{TASK:02d}] START UPSERTING RECORDS")
+
             await mongo.upsert_documents_hashed(record_list, coll_name = 'raw_hist')
+
+            print(f"[{TASK:02d}] END UPSERTING RECORDS ({len(record_list)} RECORDS)") ; TASK += 1
+
+            print(f"[{TASK:02d}] START UPDATING WATERMARK")
 
             # Historical: Update watermark only if there were records fetched
             latest_utime = pd.to_datetime(df["utime"]) \
@@ -208,10 +235,12 @@ async def query(
             # Upsert watermark to MongoDB
             await mongo.upsert_documents_hashed([watermark_log], "watermarks")
 
-            print(f"WATERMARK UPDATED: {latest_utime}")
+            print(f"[{TASK:02d}] END UPDATING WATERMARK ({latest_utime})")
 
         elif origin == 'rec':
 
+            print(f"[{TASK:02d}] START UPSERTING RECORDS")
+
             await mongo.upsert_documents_hashed(record_list, coll_name = 'raw_rec')
 
-        print(f"{len(record_list)} RECORDS UPSERTED TO 'raw_{origin}'")
+            print(f"[{TASK:02d}] END UPSERTING RECORDS ({len(record_list)} RECORDS)")
