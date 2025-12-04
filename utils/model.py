@@ -39,7 +39,7 @@ def combine_data(measurements, patients):
             "mobile"            : row["mobile"],            # filt/unified
             "uc"                : row["uc"],                # filt
             "fhr"               : row["fhr"],               # filt
-            # "fmov"              : row["fmov"],              # filt
+            "fmov"              : row["fmov"],              # filt
             "gest_age"          : row["gest_age"],          # filt
             "measurement_date"  : row["measurement_date"],  # filt
             "start_test_ts"     : row["start_test_ts"],     # filt
@@ -127,7 +127,7 @@ def extract_features(data):
             "mobile"            : row["mobile"],
             "uc"                : row["uc"],
             "fhr"               : row["fhr"],
-            # "fmov"              : row["fmov"],
+            "fmov"              : row["fmov"],
             "gest_age"          : row["gest_age"],
             "measurement_date"  : row["measurement_date"],
             "start_test_ts"     : row["start_test_ts"],

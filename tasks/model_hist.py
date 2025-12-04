@@ -62,7 +62,7 @@ async def model_hist(
             "mobile": 1,
             "uc": 1,
             "fhr": 1,
-            # "fmov": 1,
+            "fmov": 1,
             "gest_age": 1,
             "measurement_date": 1,
             "start_test_ts": 1,
