@@ -109,7 +109,7 @@ async def filter(
                         while len(fmov_data) < max_len:
                             fmov_data.append("0")
                     elif len(fmov_data) > max_len:
-                        while len(uc_data) < len(fhr_data):
+                        while len(uc_data) < len(fmov_data):
                             uc_data.append("0")
                             fhr_data.append("0")
 
