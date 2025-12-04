@@ -11,7 +11,9 @@ async def filter(
 
 ) -> None:
 
-    print("RETRIEVING WATERMARK")
+    TASK = 1
+
+    print(f"[{TASK:02d}] START RETRIEVING WATERMARK")
 
     curr_watermark = await mongo.get_all_documents(
         coll_name="watermarks",
@@ -28,7 +30,7 @@ async def filter(
 
     last_utime = curr_watermark[0]['last_utime']
 
-    print("WATERMARK RETRIEVED", last_utime)
+    print(f"[{TASK:02d}] END RETRIEVING WATERMARK ({last_utime})") ; TASK += 1
 
     if origin == 'hist':
         raw_records = mongo.stream_all_documents(
@@ -66,12 +68,18 @@ async def filter(
             ]
         )
 
-    bad_uc_fhr      = 0
-    no_gest_age     = 0
+    print(f"[{TASK:02d}] START STREAMING RECORDS")
+
+    all_added   = 0
+    all_skipped = 0
     async for batch in raw_records:
+
+        batch_skipped = 0
 
         filt_records    = []
         batch_max_utime = batch[-1]["utime"]
+
+        print(f"[B] {len(batch)} BATCH")
 
         for record in batch:
 
@@ -79,7 +87,7 @@ async def filter(
             uc_data     = record['uc']
             fhr_data    = record['fhr']
             if len(uc_data) < 60*20 or len(fhr_data) < 60*20:
-                bad_uc_fhr += 1
+                batch_skipped += 1
                 continue
             else:
                 max_len = max(len(uc_data), len(fhr_data))
@@ -92,37 +100,44 @@ async def filter(
                 record['uc'] = uc_data
                 record['fhr'] = fhr_data
 
-                # fmov_data = await anyio.to_thread.run_sync(
-                #     lambda: extract_fetal_movement(record['fmov'], record['measurement_date'], max_len)
-                # ) if record['fmov'] else None
-                #
-                # if fmov_data:
-                #     if fmov_data[1] > max_len:
-                #         while len(uc_data) != fmov_data[1] and len(fhr_data) != fmov_data[1]:
-                #             uc_data.append("0")
-                #             fhr_data.append("0")
-                #
-                # record['fmov'] = fmov_data[0] if fmov_data else None
+                fmov_data = await anyio.to_thread.run_sync(
+                    lambda: extract_fetal_movement(record['fmov'], record['measurement_date'])
+                ) if record['fmov'] else None
+
+                if fmov_data is not None:
+                    if len(fmov_data) < max_len:
+                        while len(fmov_data) < max_len:
+                            fmov_data.append("0")
+                    elif len(fmov_data) > max_len:
+                        while len(uc_data) < len(fhr_data):
+                            uc_data.append("0")
+                            fhr_data.append("0")
+
+                record['fmov'] = fmov_data
 
             # Check if gestational age is present
             gest_age = record['gest_age']
             if gest_age is None:
-                no_gest_age += 1
+                batch_skipped += 1
                 continue
 
             filt_records.append(record)
 
-        print(f"{len(filt_records)} RECORDS BUILT")
+        print(f"[B] {len(filt_records)} RECORDS BUILT")
+        print(f"[B] {batch_skipped} RECORDS SKIPPED")
+
+        all_added   += len(filt_records)
+        all_skipped += batch_skipped
 
         if len(filt_records) > 0:
 
-            if origin == 'hist':
-                await mongo.upsert_documents_hashed(filt_records, coll_name = 'filt_hist')
+            print("[B] START UPSERTING RECORDS")
 
-            elif origin == 'rec':
-                await mongo.upsert_documents_hashed(filt_records, coll_name = 'filt_rec')
+            await mongo.upsert_documents_hashed(filt_records, coll_name=f'filt_{origin}')
 
-            print(f"{len(filt_records)} RECORDS UPSERTED TO 'filt_{origin}'")
+            print(f"[B] END UPSERTING RECORDS ({len(filt_records)} RECORDS)")
+
+        print("[B] START UPDATING WATERMARK")
 
         watermark_log = {
             "pipeline_name": f'raw_{origin}',
@@ -132,4 +147,9 @@ async def filter(
         # Upsert watermark to MongoDB
         await mongo.upsert_documents_hashed([watermark_log], "watermarks")
 
-        print(f"WATERMARK UPDATED: {batch_max_utime}")
+        print(f"[B] END UPDATING WATERMARK ({batch_max_utime})")
+
+    print(f"[{TASK:02d}] END STREAMING RECORDS")
+
+    print(f"[{TASK:02d}] {all_added} RECORDS UPSERTED")
+    print(f"[{TASK:02d}] {all_skipped} RECORDS SKIPPED")

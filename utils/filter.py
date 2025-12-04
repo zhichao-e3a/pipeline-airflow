@@ -1,8 +1,8 @@
 from datetime import datetime
 
-def extract_fetal_movement(raw_fmov, start_ts, length):
+def extract_fetal_movement(raw_fmov, start_ts):
 
-    fmov_idx = [] ; record = [] ; unique_time_set = set()
+    fmov_idx = [] ; unique_time_set = set()
     start_dt = datetime.strptime(start_ts, '%Y-%m-%d %H:%M:%S')
 
     for _fmov in raw_fmov:
@@ -10,7 +10,9 @@ def extract_fetal_movement(raw_fmov, start_ts, length):
         fmov_unix   = int(_fmov.split('：')[1].split(' ')[0])
         fmov_deg    = _fmov.split('：')[2]
         fmov_dt     = datetime.fromtimestamp(fmov_unix)
-        idx         = fmov_dt - start_dt
+        if fmov_dt < start_dt:
+            continue
+        idx         = fmov_dt-start_dt
         idx_s       = idx.seconds
         fmov_tuple  = (idx_s, fmov_deg)
 
@@ -19,24 +21,11 @@ def extract_fetal_movement(raw_fmov, start_ts, length):
             unique_time_set.add(idx_s)
 
     fmov_idx.sort(key=lambda x: x[0])
+    last = fmov_idx[-1][0]
 
-    counter = 0
-    pointer = 0
+    record = ["0" for _ in range(last)]
 
-    while pointer < len(fmov_idx):
+    for fm in fmov_idx:
+        record[fm[0]-1] = fm[1]
 
-        curr = fmov_idx[pointer]
-
-        if counter != curr[0]:
-            record.append("0")
-        else:
-            record.append(curr[1])
-            pointer += 1
-
-        counter += 1
-
-    while len(record) < length:
-
-        record.append("0")
-
-    return record, len(record)
+    return record

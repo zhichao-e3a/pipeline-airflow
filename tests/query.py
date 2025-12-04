@@ -12,9 +12,9 @@ sql     = SQLDBConnector()
 
 parser  = argparse.ArgumentParser()
 parser.add_argument('--origin', required=True, choices=['rec', 'hist'])
-parser.add_argument('--limit', required=True, type=int)
+parser.add_argument('--limit', required=False)
 origin  = parser.parse_args().origin
-limit   = parser.parse_args().limit
+limit   = int(parser.parse_args().limit) if parser.parse_args().limit else None
 
 print("=============== START CLEAR COLLECTIONS ===============")
 mongo = MongoDBConnector(mode=mode)
