@@ -1,15 +1,16 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 def extract_fetal_movement(raw_fmov, start_ts):
 
     fmov_idx = [] ; unique_time_set = set()
     start_dt = datetime.strptime(start_ts, '%Y-%m-%d %H:%M:%S')
+    start_dt = start_dt.replace(tzinfo=ZoneInfo("Asia/Singapore"))
 
     for _fmov in raw_fmov:
-
-        fmov_unix   = int(_fmov.split('：')[1].split(' ')[0])
+        fmov_unix   = _fmov.split('：')[1].split(' ')[0]
         fmov_deg    = _fmov.split('：')[2]
-        fmov_dt     = datetime.fromtimestamp(fmov_unix)
+        fmov_dt     = datetime.fromtimestamp(int(fmov_unix), tz=ZoneInfo("Asia/Singapore"))
         if fmov_dt < start_dt:
             continue
         idx         = fmov_dt-start_dt
