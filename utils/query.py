@@ -158,9 +158,7 @@ async def async_process_df(df):
 
     # return uc_results, fhr_results, []
 
-async def async_process_urls(
-        url_list
-):
+async def async_process_urls(url_list):
 
     url_indexed = [(i,j) for i,j in enumerate(url_list)]
 
@@ -170,12 +168,7 @@ async def async_process_urls(
 
     return results[0]
 
-def extract_gest_age(
-
-        conclusion : str,
-        basic_info : str
-
-) -> Optional[int]:
+def extract_gest_age(conclusion : str, basic_info : str) -> Optional[int]:
 
     gest_age        = None
     basic_info_json = json.loads(basic_info)

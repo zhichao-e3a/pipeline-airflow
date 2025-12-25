@@ -48,7 +48,6 @@ x-airflow-common:
   build: .
   environment:
     &airflow-common-env
-    MODE: 'remote'
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -70,16 +69,17 @@ x-airflow-common:
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
     PYTHONPATH: "/opt/airflow:/opt/airflow/include:/opt/airflow/libs"
   volumes:
-    # Base path to which all the files will be volumed ; Default '.'
-    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
-    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
-    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
 
-    - ${AIRFLOW_PROJ_DIR:-.}/database:/opt/airflow/libs/database
-    - ${AIRFLOW_PROJ_DIR:-.}/utils:/opt/airflow/libs/utils
-    - ${AIRFLOW_PROJ_DIR:-.}/tasks:/opt/airflow/libs/tasks
-    - ${AIRFLOW_PROJ_DIR:-.}/core:/opt/airflow/libs/core
+#    - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
+#    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
+#    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
+#    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+#
+#    - ${AIRFLOW_PROJ_DIR:-.}/core:/opt/airflow/core
+#    - ${AIRFLOW_PROJ_DIR:-.}/schemas:/opt/airflow/schemas
+#    - ${AIRFLOW_PROJ_DIR:-.}/tasks:/opt/airflow/tasks
+#    - ${AIRFLOW_PROJ_DIR:-.}/utils:/opt/airflow/utils
 
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:

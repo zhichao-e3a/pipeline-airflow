@@ -1,27 +1,15 @@
-from database.MongoDBConnector import MongoDBConnector
-
 from utils.filter import extract_fetal_movement
+from schemas.records import assert_records_match_schema
 
 import anyio
 
-async def filter(
+from database_manager.database.mongo import MongoDBConnector
 
-        mongo   : MongoDBConnector,
-        origin  : str
-
-) -> None:
-
-    TASK = 1
-
-    print(f"[{TASK:02d}] START RETRIEVING WATERMARK")
+async def filter(mongo: MongoDBConnector) -> None:
 
     curr_watermark = await mongo.get_all_documents(
-        coll_name="watermarks",
-        query={
-            "_id": {
-                "$eq": f"raw_{origin}"
-            }
-        },
+        coll_name="WATERMARKS",
+        query={"_id": "RAW_RECORDS"},
         projection = {
             "_id"        : 0,
             "last_utime" : 1
@@ -30,45 +18,20 @@ async def filter(
 
     last_utime = curr_watermark[0]['last_utime']
 
-    print(f"[{TASK:02d}] END RETRIEVING WATERMARK ({last_utime})") ; TASK += 1
+    print(f"WATERMARK RETRIEVED ({last_utime})")
 
-    if origin == 'hist':
-        raw_records = mongo.stream_all_documents(
-            coll_name = "raw_hist",
-            query = {
-                'utime': {
-                    '$gt': last_utime,
-                }
-            },
-            projection = {
-                "ctime"     : 0,
-                "doc_hash"  : 0
-            },
-            sort = [
-                ("utime", 1),
-                ("_id", 1)
-            ]
-        )
-
-    elif origin == 'rec':
-        raw_records = mongo.stream_all_documents(
-            coll_name="raw_rec",
-            query={
-                'utime': {
-                    '$gt': last_utime,
-                }
-            },
-            projection={
-                "ctime"     : 0,
-                "doc_hash"  : 0
-            },
-            sort = [
-                ("utime", 1),
-                ("_id", 1)
-            ]
-        )
-
-    print(f"[{TASK:02d}] START STREAMING RECORDS")
+    raw_records = mongo.stream_all_documents(
+        coll_name = "RAW_RECORDS",
+        query = {'utime': {'$gt': last_utime}},
+        projection = {
+            "ctime"     : 0,
+            "doc_hash"  : 0
+        },
+        sort = [
+            ("utime", 1),
+            ("_id", 1)
+        ]
+    )
 
     all_added   = 0
     all_skipped = 0
@@ -129,27 +92,34 @@ async def filter(
         all_added   += len(filt_records)
         all_skipped += batch_skipped
 
+        assert_records_match_schema(filt_records, record_type="FILT")
+
         if len(filt_records) > 0:
 
             print("[B] START UPSERTING RECORDS")
 
-            await mongo.upsert_documents_hashed(filt_records, coll_name=f'filt_{origin}')
+            await mongo.upsert_documents_hashed(
+                coll_name=f'FILT_RECORDS',
+                records=filt_records
+            )
 
             print(f"[B] END UPSERTING RECORDS ({len(filt_records)} RECORDS)")
 
         print("[B] START UPDATING WATERMARK")
 
         watermark_log = {
-            "pipeline_name": f'raw_{origin}',
+            "pipeline_name": "RAW_RECORDS",
             "last_utime": batch_max_utime
         }
 
         # Upsert watermark to MongoDB
-        await mongo.upsert_documents_hashed([watermark_log], "watermarks")
+        await mongo.upsert_documents_hashed(
+            coll_name='WATERMARKS',
+            records=[watermark_log],
+            id_fields=["pipeline_name"]
+        )
 
         print(f"[B] END UPDATING WATERMARK ({batch_max_utime})")
 
-    print(f"[{TASK:02d}] END STREAMING RECORDS")
-
-    print(f"[{TASK:02d}] {all_added} RECORDS UPSERTED")
-    print(f"[{TASK:02d}] {all_skipped} RECORDS SKIPPED")
+    print(f"{all_added} RECORDS UPSERTED")
+    print(f"{all_skipped} RECORDS SKIPPED")

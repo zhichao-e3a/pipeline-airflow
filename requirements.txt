@@ -9,3 +9,4 @@ motor==3.7.1
 neurokit2==0.2.12
 pillow==12.0.0
 PyWavelets==1.9.0
+vendor/database_manager-0.2.0-py3-none-any.whl

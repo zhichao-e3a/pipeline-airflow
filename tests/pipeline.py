@@ -1,19 +1,35 @@
+from tasks.rebuild import backfill
+from tasks.query import query
+from tasks.filter import filter
+
+import asyncio
 import argparse
-import subprocess
+
+from config.configs import TEST_MONGO_CONFIG, SQL_CONFIG
+from database_manager.database.mongo import MongoDBConnector
+from database_manager.database.mysql import SQLDBConnector
 
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--origin', required=True, choices=['rec', 'hist'])
     parser.add_argument('--limit', required=False)
-    origin = parser.parse_args().origin
     limit  = int(parser.parse_args().limit) if parser.parse_args().limit else None
 
-    if limit is not None:
-        subprocess.run(['python', '-m', 'tests.query', '--origin', origin, '--limit', str(limit)], check=True)
-    else:
-        subprocess.run(['python', '-m', 'tests.query', '--origin', origin], check=True)
-    subprocess.run(['python', '-m', 'tests.filter', '--origin', origin], check=True)
+    print("=============== START REBUILD COLLECTIONS ===============")
+    mongo = MongoDBConnector(cfg=TEST_MONGO_CONFIG)
+    asyncio.run(backfill(mongo=mongo))
+    print("=============== END REBUILD COLLECTIONS ===============")
+
+    print("=============== START QUERY TASK ===============")
+    mongo = MongoDBConnector(cfg=TEST_MONGO_CONFIG)
+    sql = SQLDBConnector(cfg=SQL_CONFIG)
+    asyncio.run(query(sql=sql, mongo=mongo, limit=limit))
+    print("=============== END QUERY TASK ===============")
+
+    print("=============== START FILTER TASK ===============")
+    mongo = MongoDBConnector(cfg=TEST_MONGO_CONFIG)
+    asyncio.run(filter(mongo=mongo))
+    print("=============== END FILTER TASK ===============")
 
 if __name__ == '__main__':
     main()

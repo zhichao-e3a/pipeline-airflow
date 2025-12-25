@@ -1,0 +1,27 @@
+# CREATE AT BUILD TIME
+logs/
+plugins/
+
+# MOUNT AT RUNTIME
+config/
+.env
+
+# NO NEED TO COPY
+.gitignore
+docker-compose.yaml
+Dockerfile
+README.md
+
+__pycache__/
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.git/
+.DS_Store
+.vscode/
+.idea/
+.pytest_cache/
+.mypy_cache/
+ruff_cache/
