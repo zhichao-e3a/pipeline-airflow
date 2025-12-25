@@ -7,6 +7,7 @@ config/
 .env
 
 # NO NEED TO COPY
+tests/
 .gitignore
 docker-compose.yaml
 Dockerfile
