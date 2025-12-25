@@ -31,19 +31,6 @@ async def query(sql: SQLDBConnector, mongo: MongoDBConnector, limit: int=None) -
 
     hist_df = await anyio.to_thread.run_sync(lambda: sql.query_to_dataframe(query=custom_query))
 
-    # Create 'edd' and 'add' and 'origin' columns
-
-    hist_df["edd"] = (
-        pd.to_datetime(hist_df["expected_born_date"])
-        .dt.strftime("%Y-%m-%d %H:%M")
-    )
-
-    hist_df["add"] = (
-        pd.to_datetime(hist_df["end_born_ts"], unit="s", utc=True)
-        .dt.tz_convert("Asia/Singapore")
-        .dt.strftime("%Y-%m-%d %H:%M")
-    )
-
     hist_df["origin"] = "HIST"
 
     print(f"[H] QUERIED FROM NAVICAT ({len(hist_df)} MEASUREMENTS)")
@@ -51,18 +38,14 @@ async def query(sql: SQLDBConnector, mongo: MongoDBConnector, limit: int=None) -
     # Query mobile numbers of recruited patients in 'patients_unified'
     recruited_patients = await mongo.get_all_documents(
         coll_name = "patients_unified",
-        query = {'type' : 'rec'},
+        query = {'type': 'rec'},
         projection = {
             '_id'       : 0,
-            'mobile'    : 1,
-            'edd'       : 1,
-            'add'       : 1
+            'mobile'    : 1
         }
     )
 
     recruited_mobiles = [i['mobile'] for i  in recruited_patients]
-
-    recruited_patients_df = pd.DataFrame(recruited_patients)
 
     print(f"[R] QUERIED FROM `patients_unified` ({len(recruited_mobiles)} PATIENTS)")
 
@@ -77,8 +60,6 @@ async def query(sql: SQLDBConnector, mongo: MongoDBConnector, limit: int=None) -
         custom_query += f" LIMIT {limit}"
 
     rec_df = await anyio.to_thread.run_sync(lambda: sql.query_to_dataframe(query = custom_query))
-
-    rec_df = rec_df.merge(recruited_patients_df, on='mobile', how='left')
 
     rec_df["origin"] = "REC"
 

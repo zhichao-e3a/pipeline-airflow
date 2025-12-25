@@ -2,8 +2,9 @@ from __future__ import annotations
 from typing import Any, Dict, Sequence
 
 REQUIRED = {
-    "_id", "mobile", "start_test_ts", "measurement_date", "uc", "fhr", "fmov",
-    "gest_age", "edd", "add", "origin", "sql_utime"
+    "_id", "mobile", "start_test_ts", "measurement_date",
+    "uc", "fhr", "fmov", "gest_age",
+    "origin", "sql_utime"
 }
 
 ALLOWED = set(REQUIRED)
@@ -60,16 +61,6 @@ def assert_records_match_schema(records: Sequence[Dict[str, Any]], record_type: 
                 if  not r["gest_age"] is None: raise AssertionError(f"Row {i}: gest_age must be int or None")
             if record_type == "FILT":
                 raise AssertionError(f"Row {i}: gest_age must be int")
-
-        # edd: str | None
-        if not (isinstance(r["edd"], str) or r["edd"] is None):
-            print(r["edd"])
-            raise AssertionError(f"Row {i}: edd must be str or None")
-
-        # add: str | None
-        if not (isinstance(r["add"], str) or r["add"] is None):
-            print(r["add"])
-            raise AssertionError(f"Row {i}: add must be str or None")
 
         # origin: str
         if not isinstance(r["origin"], str):
