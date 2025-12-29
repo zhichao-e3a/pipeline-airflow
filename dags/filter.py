@@ -8,7 +8,7 @@ from airflow.providers.http.sensors.http import HttpSensor
 
 with DAG(
 
-    dag_id       = "dag_rebuild",
+    dag_id       = "dag_filter",
     start_date   = datetime(2025, 1, 1),
     schedule     = None,
     catchup      = False,
@@ -16,10 +16,10 @@ with DAG(
 
 ) as dag:
 
-    trigger_rebuild = HttpOperator(
-        task_id         = "start_task_rebuild",
+    trigger_filter = HttpOperator(
+        task_id         = "start_task_filter",
         http_conn_id    = "pipeline_api",
-        endpoint        = "/pipeline/rebuild",
+        endpoint        = "/pipeline/filter",
         method          = "POST",
         headers         = {"Content-Type": "application/json"},
         response_check  = lambda r: r.status_code == 202,
@@ -27,10 +27,10 @@ with DAG(
         do_xcom_push    = True
     )
 
-    wait_rebuild = HttpSensor(
-        task_id         = "wait_task_rebuild",
+    wait_filter = HttpSensor(
+        task_id         = "wait_task_filter",
         http_conn_id    = "pipeline_api",
-        endpoint        = "{{ ti.xcom_pull(task_ids='start_task_rebuild') }}",
+        endpoint        = "{{ ti.xcom_pull(task_ids='start_task_filter') }}",
         method          = "GET",
         response_check  = job_done,
         poke_interval   = 30,
@@ -38,4 +38,4 @@ with DAG(
         mode            = "reschedule"
     )
 
-    trigger_rebuild >> wait_rebuild
+    trigger_filter >> wait_filter

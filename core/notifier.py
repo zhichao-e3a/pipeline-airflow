@@ -1,6 +1,7 @@
 import smtplib
-from email.message import EmailMessage
+
 from typing import List
+from email.message import EmailMessage
 
 class DagNotifier:
 

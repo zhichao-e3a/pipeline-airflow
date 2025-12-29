@@ -2,6 +2,7 @@ from core.notifier import DagNotifier
 
 import os
 import traceback
+
 from typing import Any, Dict, Optional
 from datetime import timedelta
 
@@ -12,6 +13,21 @@ RECIPIENTS = [
 ]
 
 _LABEL_WIDTH = max(len(k) + 2 for k in ["DAG", "Task", "Run ID", "Start", "End", "Duration", "Try", "Task Log"])
+
+def job_done(resp):
+
+    if resp.status_code == 202:
+        return False
+
+    if resp.status_code == 200:
+        data = resp.json()
+        if data.get("status") == "succeeded":
+            return True
+        if data.get("status") == "failed":
+            raise ValueError(f"Rebuild failed: {data.get('error')}")
+        return False
+
+    raise ValueError(f"Unexpected response: {resp.status_code} {resp.text}")
 
 def _fmt_td(td: Optional[timedelta]) -> str:
 
@@ -82,7 +98,7 @@ def on_task_failure(context: Dict[str, Any]) -> None:
     exc_text = "".join(traceback.format_exception_only(type(exc), exc)).strip() if exc else "N/A"
 
     header = _format_block(
-        title=f"❌ Airflow Task Failure — {c['dag_id']}.{c['task_id']}",
+        title=f"Airflow Task Failure — {c['dag_id']}.{c['task_id']}",
         rows=[
             f"DAG: {c['dag_id']}",
             f"Task: {c['task_id']}",
@@ -95,7 +111,7 @@ def on_task_failure(context: Dict[str, Any]) -> None:
     )
 
     error = _format_block(
-        title=f"💥 Exception ({exc_type})",
+        title=f"Exception ({exc_type})",
         rows=[f"Detail: {exc_text}"]
     )
 
@@ -122,7 +138,7 @@ def on_task_success(
     c = _common_context(context)
 
     header = _format_block(
-        title=f"✅ Airflow Task Success — {c['dag_id']}.{c['task_id']}",
+        title=f"Airflow Task Success — {c['dag_id']}.{c['task_id']}",
         rows=[
             f"DAG: {c['dag_id']}",
             f"Task: {c['task_id']}",

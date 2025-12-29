@@ -77,9 +77,6 @@ x-airflow-common:
 #    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
 #
 #    - ${AIRFLOW_PROJ_DIR:-.}/core:/opt/airflow/core
-#    - ${AIRFLOW_PROJ_DIR:-.}/schemas:/opt/airflow/schemas
-#    - ${AIRFLOW_PROJ_DIR:-.}/tasks:/opt/airflow/tasks
-#    - ${AIRFLOW_PROJ_DIR:-.}/utils:/opt/airflow/utils
 
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:

@@ -10,13 +10,11 @@ ARG AIRFLOW_VERSION=3.1.0
 ARG PYTHON_VERSION=3.12
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_CACHE_DIR=1
-ENV MODE=TEST
 
-COPY requirements.txt ./
-COPY vendor/ ./vendor/
-
-RUN pip install -r requirements.txt \
-    --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+#COPY requirements.txt ./
+#
+#RUN pip install -r requirements.txt \
+#    --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
 
 COPY . /opt/airflow
 
