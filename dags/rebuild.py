@@ -39,8 +39,8 @@ def dag_rebuild():
         asyncio.run(rebuild(mongo=mongo))
         print("=============== END REBUILD COLLECTIONS ===============")
 
-    trigger_downstream = TriggerDagRunOperator(
-        task_id="rebuild_downstream",
+    trigger_downstream_1 = TriggerDagRunOperator(
+        task_id="rebuild_raw_filt",
         trigger_dag_id="raw_filt_records",
         poke_interval=10,
         wait_for_completion=True,
@@ -48,6 +48,15 @@ def dag_rebuild():
         logical_date="{{ ts }}"
     )
 
-    task_rebuild() >> trigger_downstream
+    trigger_downstream_2 = TriggerDagRunOperator(
+        task_id="rebuild_merge",
+        trigger_dag_id="merge_records",
+        poke_interval=10,
+        wait_for_completion=True,
+        reset_dag_run=False,
+        logical_date="{{ ts }}"
+    )
+
+    task_rebuild() >> trigger_downstream_1 >> trigger_downstream_2
 
 dag = dag_rebuild()

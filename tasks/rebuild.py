@@ -2,7 +2,7 @@ from database_manager.database.mongo import MongoDBConnector
 
 async def rebuild(mongo: MongoDBConnector):
 
-    for _, c in enumerate(["RAW_RECORDS", "FILT_RECORDS"]):
+    for _, c in enumerate(["RAW_RECORDS", "FILT_RECORDS", "MERGED_RECORDS"]):
 
         n_del = await mongo.delete_all_documents(coll_name=c)
 
