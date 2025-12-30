@@ -48,6 +48,8 @@ x-airflow-common:
   build: .
   environment:
     &airflow-common-env
+    AIRFLOW__API__BASE_URL: 'https://api.ai.e3ahealth.com/airflow'
+    FORWARDED_ALLOW_IPS: '127.0.0.1'
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -118,7 +120,7 @@ services:
 
   airflow-apiserver:
     <<: *airflow-common
-    command: api-server
+    command: ["airflow", "api-server", "--proxy-headers"]
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:
