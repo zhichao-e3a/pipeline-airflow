@@ -48,9 +48,10 @@ x-airflow-common:
   build: .
   environment:
     &airflow-common-env
-    AIRFLOW__API__BASE_URL: 'https://api.ai.e3ahealth.com/airflow'
+    AIRFLOW__API__BASE_URL: 'https://dashboard.ai.e3ahealth.com/airflow'
     FORWARDED_ALLOW_IPS: '127.0.0.1'
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+
     AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
@@ -58,7 +59,7 @@ x-airflow-common:
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/airflow/execution/'
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
     # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
@@ -72,13 +73,10 @@ x-airflow-common:
     PYTHONPATH: "/opt/airflow:/opt/airflow/include:/opt/airflow/libs"
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
-
-#    - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
-#    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
-#    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
-#    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-#
-#    - ${AIRFLOW_PROJ_DIR:-.}/core:/opt/airflow/core
+    - ${AIRFLOW_PROJ_DIR:-.}/core:/opt/airflow/core
+    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
+    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
 
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
